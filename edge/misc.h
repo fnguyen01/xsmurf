@@ -199,6 +199,27 @@ void GradientModulus3D_tensor3D( float *gradient_modulus,
 				 int type,
 				 int is_trace);
 
+/**
+ * Compute tha maximum value of the symetric / antisymetric part of the 3D WT tensor 
+ * (with 3 components eqal to zero).
+ *
+ * The first 6 arguments are the WT tensor components.
+ * The output are modL / modT. 
+ */
+
+void GradientModulus3D_tensor3D_LT( float *derivative_along_X1,
+				    float *derivative_along_Y1,
+				    float *derivative_along_Z1,
+				    float *derivative_along_X2,
+				    float *derivative_along_Y2,
+				    float *derivative_along_Z2,
+				    float *derivative_along_X3,
+				    float *derivative_along_Y3,
+				    float *derivative_along_Z3,
+				    int length,
+				    float *modL,
+				    float *modT)
+
 /* void GradientModulus3D_tensor3D_vector( fftw_real *derivative_along_X1,  */
 /* 					fftw_real *derivative_along_Y1,  */
 /* 					fftw_real *derivative_along_Z1,  */
