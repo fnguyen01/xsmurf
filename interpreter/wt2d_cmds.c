@@ -5459,6 +5459,7 @@ w2_wtmm2d_TclCmd_(ClientData clientData,
   {
     "IIsfss",
     "-vector", "II",
+    "-vector2d3c", "IIII",
     "-svdtype", "d",
     "-svd_LT", "ss",
     "-svd_LT_max", "ss",
@@ -5482,6 +5483,10 @@ w2_wtmm2d_TclCmd_(ClientData clientData,
      "  -vector [II]: extract contour lines of a 2D -> 2D vector field.\n"
      "                user must provide (gradX, gradY) image of the second\n"
      "                component of the vector field.\n"
+     "  -vector2d3c [IIII]: extract contour lines of a 2D -> 3D vector field.\n"
+     "                User must provide (gradX2, gradY2)\n"
+     "                and (gradX3, gradY3) images for the second\n"
+     "                and thrid components of the vector field.\n"
      "  -svdtype [d]: argument must be 0, 1.\n"
      "                SVD_TYPE_MAX(=0) means get max value + associated direction\n"
      "                SVD_TYPE_MIN(=1) means get min value + associated direction\n"
@@ -5502,12 +5507,14 @@ w2_wtmm2d_TclCmd_(ClientData clientData,
 
   /* Options's presence */
   int isVector;
+  int is2d3c;
   int isSvdType;
   int isSvd_LT;
   int isSvd_LT_max;
     
   /* Options's parameters */
   Image    *gradx2, *grady2;
+  Image    *gradx3, *grady3;
   int       svdtype = SVD_TYPE_MAX;
   char     *modName_L, *modName_T;
   char     *modName_ext_L, *modName_ext_T;
@@ -5546,10 +5553,17 @@ w2_wtmm2d_TclCmd_(ClientData clientData,
       return TCL_ERROR;
     }
   }
+
+  is2d3c = arg_present(2);
+  if (is2d3c) {
+    if (arg_get(2, &gradx2, &grady2, &gradx3, &grady3) == TCL_ERROR) {
+      return TCL_ERROR;
+    }
+  } 
   
-  isSvdType = arg_present(2);
+  isSvdType = arg_present(3);
   if (isSvdType) {
-    if (arg_get(2, &svdtype) == TCL_ERROR) {
+    if (arg_get(3, &svdtype) == TCL_ERROR) {
       return TCL_ERROR;
     }
 
@@ -5558,16 +5572,16 @@ w2_wtmm2d_TclCmd_(ClientData clientData,
 			    NULL);
   }
 
-  isSvd_LT = arg_present(3);
+  isSvd_LT = arg_present(4);
   if (isSvd_LT) {
-    if (arg_get(3, &modName_L, &modName_T) == TCL_ERROR) {
+    if (arg_get(4, &modName_L, &modName_T) == TCL_ERROR) {
       return TCL_ERROR;
     }
   }
 
-  isSvd_LT_max = arg_present(4);
+  isSvd_LT_max = arg_present(5);
   if (isSvd_LT_max) {
-    if (arg_get(4, &modName_ext_L, &modName_ext_T) == TCL_ERROR) {
+    if (arg_get(5, &modName_ext_L, &modName_ext_T) == TCL_ERROR) {
       return TCL_ERROR;
     }
 
@@ -5602,6 +5616,29 @@ w2_wtmm2d_TclCmd_(ClientData clientData,
       return TCL_ERROR;
     }
   
+  }
+
+  if (is2d3c) {
+    if ((gradx2->lx != grady2->lx) || (gradx2->ly != grady2->ly)) {
+      Tcl_AppendResult(interp, "Inputs2 must have the same sizes!!!.", NULL);
+      return TCL_ERROR;
+    }
+    if ((gradx3->lx != grady3->lx) || (gradx3->ly != grady3->ly)) {
+      Tcl_AppendResult(interp, "Inputs3 must have the same sizes!!!.", NULL);
+      return TCL_ERROR;
+    }
+    if ((gradx->lx != gradx2->lx) || (grady->ly != grady2->ly) || (gradx->lx != gradx3->lx) || (grady->ly != grady3->ly)) {
+      Tcl_AppendResult(interp, "All image inputs must have the same sizes!!!.", NULL);
+      return TCL_ERROR;
+    }
+    if ((gradx2->type != PHYSICAL) || (grady2->type != PHYSICAL)) {
+      Tcl_AppendResult(interp, "Inputs2 must have a PHYSICAL type!!!.", NULL);
+      return TCL_ERROR;
+    }
+    if ((gradx3->type != PHYSICAL) || (grady3->type != PHYSICAL)) {
+      Tcl_AppendResult(interp, "Inputs3 must have a PHYSICAL type!!!.", NULL);
+      return TCL_ERROR;
+    }
   }
 
 
@@ -5644,6 +5681,23 @@ w2_wtmm2d_TclCmd_(ClientData clientData,
     Extract_Gradient_Maxima_2D_vectorfield( gradx,  grady,
 					    gradx2, grady2,
 					    mod, arg, max, scale, svdtype);
+
+  } else if (is2d3c) {
+    // Extract Longitudinal / Transversal information
+    // gradx,grady are not modified by this
+    // modL / modT are output
+    if (isSvd_LT) { 
+      Extract_Gradient_Maxima_2D3C_vectorfield_LT( gradx,  grady,
+						 gradx2, grady2,
+                                                 gradx3, grady3,
+						 modL, modT);
+    }
+
+    // gradx,grady will be modified after this function call
+    Extract_Gradient_Maxima_2D_vectorfield( gradx,  grady,
+					    gradx2, grady2,
+					    mod, arg, max, scale, svdtype);
+
 
   } else { // the regular scalar WT
 

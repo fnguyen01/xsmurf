@@ -203,6 +203,39 @@ void GradientModulus2D_tensor2D_LT( float *derivative_along_X1,
 
   }
   
+} // GradientModulus2D_tensor3D_LT
+
+void GradientModulus2D_tensor3D_LT( float *derivative_along_X1,
+				    float *derivative_along_Y1,
+				    float *derivative_along_X2,
+				    float *derivative_along_Y2,
+				    float *derivative_along_X3,
+				    float *derivative_along_Y3,
+				    int length,
+				    float *modL,
+				    float *modT)
+{
+
+  int i;
+
+  for ( i=0; i<length; i++) {
+    
+    float gx1 = derivative_along_X1[i];
+    float gy1 = derivative_along_Y1[i];
+    float gx2 = derivative_along_X2[i];
+    float gy2 = derivative_along_Y2[i];
+    float gx3 = derivative_along_X3[i];
+    float gy3 = derivative_along_Y3[i];
+    
+    // max of symetric tensor part
+    modL[i] = MAX6( fabs(gx1), fabs(gy2), 0, 0.5*fabs(gx3),
+             0.5*fabs(gx2 + gy1), 0.5*fabs(gy3);
+    
+    // max of anti-symetric tensor part
+    modT[i] = MAX3(0.5 * fabs( gx2-gy1 ), 0.5*fabs(gx3), 0.5*fabs(gy3));
+
+  }
+  
 } // GradientModulus2D_tensor2D_LT
 
 /* void GradientModulus2D_tensor2D_vector( fftw_real *derivative_along_X1, */

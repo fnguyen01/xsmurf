@@ -1041,6 +1041,8 @@ proc imStudy::SeekSave {imLst pos length} {
 #
 # Options :
 #   -vector2d [string] : compute the wtmm edges of a 2d vector field
+#   -vector2d3c [string string] : compute the wtmm edges of a 2d-3components 
+#         vector field (can't be used without -lt option)
 #   -3d : interpreter input image as a Image3D data structure and compute
 #         the wtmm edges (surfaces)
 #   -vector3d [string string] : compute the wtmm edges of a 3d vector field
@@ -1082,6 +1084,7 @@ proc imStudy::WtmmgCurrentScale {ftPath args} {
 
     # set default values for options
     set isVector2d 0
+    set is2d3c 0
     set is3d 0
     set isVector3d 0
     
@@ -1093,6 +1096,12 @@ proc imStudy::WtmmgCurrentScale {ftPath args} {
 		set isVector2d 1
 		set ftPath2 [lindex $args 1]
 		set args [lreplace $args 0 1]
+	    }
+	    -vector2d3c {
+		set is2d3c 1
+		set ftPath2 [lindex $args 1]
+                set ftPath3 [lindex $args 2]
+		set args [lreplace $args 0 2]
 	    }
 	    -3d {
 		set is3d 1
@@ -1109,6 +1118,11 @@ proc imStudy::WtmmgCurrentScale {ftPath args} {
 	    }
 	}
     }
+
+    if {$is2d3c == 1 && $isLT == 0} {
+        echo "Warning : To compute 2d-3components wtmm, assuming isLT = 1."
+        set isLT 1
+    }
     
     if {$isVector2d == 1} {
 	switch -exact -- $wavelet {
@@ -1123,6 +1137,25 @@ proc imStudy::WtmmgCurrentScale {ftPath args} {
 		ConvolOneScale $ftPath2 dx2 $scale $mexicanDef_FFTW(dx,r) $mexicanDef_FFTW(dx,i)
 		ConvolOneScale $ftPath  dy1 $scale $mexicanDef_FFTW(dy,r) $mexicanDef_FFTW(dy,i)
 		ConvolOneScale $ftPath2 dy2 $scale $mexicanDef_FFTW(dy,r) $mexicanDef_FFTW(dy,i)
+	    }
+	}
+    } elseif {$is2d3c == 1} {
+        switch -exact -- $wavelet {
+	    gaussian {
+		ConvolOneScale $ftPath  dx1 $scale $gaussianDef_FFTW(dx,r) $gaussianDef_FFTW(dx,i)
+		ConvolOneScale $ftPath2 dx2 $scale $gaussianDef_FFTW(dx,r) $gaussianDef_FFTW(dx,i)
+		ConvolOneScale $ftPath3 dx3 $scale $gaussianDef_FFTW(dx,r) $gaussianDef_FFTW(dx,i)
+		ConvolOneScale $ftPath  dy1 $scale $gaussianDef_FFTW(dy,r) $gaussianDef_FFTW(dy,i)
+		ConvolOneScale $ftPath2 dy2 $scale $gaussianDef_FFTW(dy,r) $gaussianDef_FFTW(dy,i)
+		ConvolOneScale $ftPath3 dy3 $scale $gaussianDef_FFTW(dy,r) $gaussianDef_FFTW(dy,i)
+	    }
+	    mexican {
+		ConvolOneScale $ftPath  dx1 $scale $mexicanDef_FFTW(dx,r) $mexicanDef_FFTW(dx,i)
+		ConvolOneScale $ftPath2 dx2 $scale $mexicanDef_FFTW(dx,r) $mexicanDef_FFTW(dx,i)
+		ConvolOneScale $ftPath3 dx3 $scale $mexicanDef_FFTW(dx,r) $mexicanDef_FFTW(dx,i)
+		ConvolOneScale $ftPath  dy1 $scale $mexicanDef_FFTW(dy,r) $mexicanDef_FFTW(dy,i)
+		ConvolOneScale $ftPath2 dy2 $scale $mexicanDef_FFTW(dy,r) $mexicanDef_FFTW(dy,i)
+		ConvolOneScale $ftPath3 dy3 $scale $mexicanDef_FFTW(dy,r) $mexicanDef_FFTW(dy,i)
 	    }
 	}
     } elseif {$isVector3d == 1} {
@@ -1245,6 +1278,8 @@ proc imStudy::WtmmgCurrentScale {ftPath args} {
 		} else {
 		    wtmm2d dx1 dy1 max${scaleIdF} $scale mod$scaleIdF arg$scaleIdF -vector dx2 dy2
 		}
+            } elseif {$is2d3c == 1} {
+                wtmm2d dx1 dy1 max${scaleIdF} $scale mod$scaleIdF arg$scaleIdF -vector2d3c dx2 dy2 dx3 dy3 -svd_LT modL$scaleIdF modT$scaleIdF -svd_LT_max maxL$scaleIdF maxT$scaleIdF
 	    } elseif {$isVector3d == 1} {
 		if {$isLT} {
 		    # vector 3d with longitudinal/transversal information
@@ -1708,7 +1743,130 @@ proc imStudy::wtmmg2d_vector {args} {
     
     return $result
 }
-
+
+# imStudy::wtmmg2d3c_vector --
+# usage : imStudy::wtmmg2d_vector str str str [["cond"] expr] script
+#
+#   Compute the wtmm of a 2D -> 3D vector field at all current scales using
+# the gradient lines method. For each scale this command computes the modulus
+# and the argument for each point of the image and the contour lines.
+#
+# Parameters :
+#   string - 1st component Image name.
+#   string - 2nd component Image name.
+#   expr   - At each scale this expression is evaluated. If it is false the wtmm
+#            is not computed for this scale and the script is not executed.
+#   script - Script to execute.
+#
+# Return value :
+#   The result of the last command of the loop.
+
+proc imStudy::wtmmg2d3c_vector {args} {
+    variable scale
+    variable scaleId
+    variable oct
+    variable vox
+    variable spFileName
+    variable useCv2d
+    variable useFftw
+    variable useDiskSwap
+    variable nThreads
+    variable isLT
+    
+    variable studyId
+    if {$studyId == "none"} {
+	return -code error "no current image study"
+    }
+
+    # Get args.
+
+    switch [llength $args] {
+	6 {
+	    # The fourth arg must be the string "cond"
+
+	    if {[string compare [lindex $args 2] "cond"] != 0} {
+		return -code error "wrong \# args: extra words after body script in \"wtmmg2d3c_vector\" command"
+	    }
+	    set image1 [lindex $args 0]
+	    set image2 [lindex $args 1]
+            set image3 [lindex $args 2]
+	    set condition [lindex $args 4]
+	    set script [lindex $args 5]
+	}
+	5 {
+	    set image1 [lindex $args 0]
+	    set image2 [lindex $args 1]
+            set image3 [lindex $args 2]
+	    set condition [lindex $args 3]
+	    set script [lindex $args 4]
+	}
+	4 {
+	    set image1 [lindex $args 0]
+	    set image2 [lindex $args 1]
+            set image3 [lindex $args 2]
+	    set condition 1
+	    set script [lindex $args 3]
+	}
+	3 {
+	    return -code error "wrong \# args: no script after image name"
+	}
+        2 {
+            return -code error "wrong \# args: only two image names given"
+        }
+	1 {
+	    return -code error "wrong \# args: only one image name given"
+	}
+	0 {
+	    return -code error "wrong \# args: no image names"
+	}
+	default {
+	    return -code error "wrong \# args: extra words after body script in \"wtmmg2d3c_vector\" command"
+	}
+    }
+
+    set theDir [pwd]
+
+    if {$useFftw == 1} {
+	isave   $image1 __image1_[pid] 
+	ifftw2d $image1  -threads $nThreads
+	isave   $image1 __ft1_[pid]	
+	delete  $image1
+
+	isave   $image2 __image2_[pid] 
+	ifftw2d $image2  -threads $nThreads
+	isave   $image2 __ft2_[pid]	
+	delete  $image2
+
+	isave   $image3 __image3_[pid] 
+	ifftw2d $image3  -threads $nThreads
+	isave   $image3 __ft3_[pid]	
+	delete  $image3
+    }
+
+    set result {}
+    scalesLoop {
+	if [uplevel expr $condition] {
+	    logMsg "  Octave $oct - vox $vox - scale $scale ( $scaleId )"
+	    set result [WtmmgCurrentScale $theDir/__ft1_[pid] -vector2d3c $theDir/__ft2_[pid] $theDir/__ft3_[pid]]
+	    set modId [lindex $result 0]
+	    set argId [lindex $result 1]
+	    set maxId [lindex $result 2]
+	    set maxLid [lindex $result 3]
+	    set maxTid [lindex $result 4]
+	    set code [catch {uplevel $script} result]
+	}
+    }
+
+    catch {file delete ${theDir}/__image1_[pid]}
+    catch {file delete ${theDir}/__image2_[pid]}
+    catch {file delete ${theDir}/__image3_[pid]}
+    catch {file delete ${theDir}/__ft1_[pid]}
+    catch {file delete ${theDir}/__ft2_[pid]}
+    catch {file delete ${theDir}/__ft3_[pid]}
+    
+    return $result
+}
+
 
 # imStudy::wtmmg3d_scalar --
 # usage : imStudy::wtmmg3d_scalar str [["cond"] expr] script
