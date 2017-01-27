@@ -203,7 +203,7 @@ void GradientModulus2D_tensor2D_LT( float *derivative_along_X1,
 
   }
   
-} // GradientModulus2D_tensor3D_LT
+} // GradientModulus2D_tensor2D_LT
 
 void GradientModulus2D_tensor3D_LT( float *derivative_along_X1,
 				    float *derivative_along_Y1,
@@ -236,7 +236,7 @@ void GradientModulus2D_tensor3D_LT( float *derivative_along_X1,
 
   }
   
-} // GradientModulus2D_tensor2D_LT
+} // GradientModulus2D_tensor3D_LT
 
 /* void GradientModulus2D_tensor2D_vector( fftw_real *derivative_along_X1, */
 /* 					fftw_real *derivative_along_Y1, */
