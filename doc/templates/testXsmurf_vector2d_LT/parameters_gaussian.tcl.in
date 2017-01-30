@@ -1,7 +1,7 @@
 studyName {test_wtmm2d_vectorfield}
 set baseDir @SM_SRC_DIR@/doc/templates/testXsmurf_vector2d
 
-wavelet mexican
+wavelet gaussian
 
 set useFftw 1
 set useNMaxSup 1
@@ -19,8 +19,8 @@ set calendos_size 512
 set border_percent 0.72
 
 set similitude 0.8
-set isgaussian 0
-set ismexican 1
+set isgaussian 1
+set ismexican 0
 set issave 1
 set angle 0
 set ishisto 1
@@ -28,7 +28,7 @@ set ismaxhisto 1
 set ishistoinit 0
 set iscontpart 0
 set isthetapart 0
-set isLT 0
+set isLT 1
 
 #set q_lst {-4 -3.5 -3 -2.5 -2 -1.5 -1 -0.5 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.2 1.4 1.5 1.6 1.8 2 2.2 2.4 2.5 2.6 2.8 3 3.2 3.4 3.5 3.6 3.8 4 5}
 

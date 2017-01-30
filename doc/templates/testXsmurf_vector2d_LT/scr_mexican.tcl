@@ -76,8 +76,56 @@ set theScr {
 	} else {
 	    dputs " Pf already computed."
 	}
-    
-    dputs "pf computed!"
+
+	# if isLT is activated then compute L/T partition functions using local maxima
+	# of each coefficient
+	if ${isLT} {
+
+	    # 1. LONGITUDINAL
+	    dputs " chain L coefficients..."
+	    chain m $amin $noct $nvox \
+		-filename ${baseDir}/${imaIdf1}_${imaIdf2}_${type}_max_${wavelet}/maxL \
+		-boxratio 1 \
+		-ecut [list $b1 $b1 $b2 $b2] \
+		-nomsg
+	    
+	    if {[file exists ${baseDir}/pf/pf_${type}_${imaIdf1}_${imaIdf2}_${wavelet}_L] == 0} {
+		dputs " Computing Longitudinal pf..."
+		
+		set zepf [pf create]
+		pf  init $zepf $amin $noct $nvox $q_lst $size "Gradient max" {}
+		pf compute $zepf m
+		pf save $zepf ${baseDir}/pf/pf_${type}_${imaIdf1}_${imaIdf2}_${wavelet}_L
+		pf destroy $zepf
+		dputs " ok."
+	    } else {
+		dputs " Pf L already computed."
+	    }
+
+	    # 2. TRANSVERSAL
+	    dputs " chain T coefficients..."
+	    chain m $amin $noct $nvox \
+		-filename ${baseDir}/${imaIdf1}_${imaIdf2}_${type}_max_${wavelet}/maxT \
+		-boxratio 1 \
+		-ecut [list $b1 $b1 $b2 $b2] \
+		-nomsg
+	    
+	    if {[file exists ${baseDir}/pf/pf_${type}_${imaIdf1}_${imaIdf2}_${wavelet}_T] == 0} {
+		dputs " Computing Longitudinal pf..."
+		
+		set zepf [pf create]
+		pf  init $zepf $amin $noct $nvox $q_lst $size "Gradient max" {}
+		pf compute $zepf m
+		pf save $zepf ${baseDir}/pf/pf_${type}_${imaIdf1}_${imaIdf2}_${wavelet}_T
+		pf destroy $zepf
+		dputs " ok."
+	    } else {
+		dputs " Pf T already computed."
+	    }
+
+	}
+	
+	dputs "pf computed!"
     }
     logMsg "End."
 }
