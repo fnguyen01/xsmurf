@@ -30,6 +30,18 @@ int Extract_Gradient_Maxima_2D_vectorfield( Image *GradX1,
 					    float scale, 
 					    int type_singular_value);
 
+int Extract_Gradient_Maxima_2D3C_vectorfield( Image *GradX1,
+					    Image *GradY1,
+					    Image *GradX2,
+					    Image *GradY2,
+					    Image *GradX3,
+					    Image *GradY3,
+					    float *mod,
+					    float *arg,
+					    float *maxima,
+					    float scale, 
+					    int type_singular_value);
+
 int Extract_Gradient_Maxima_2D_vectorfield_LT( Image *GradX1,
 					       Image *GradY1,
 					       Image *GradX2,

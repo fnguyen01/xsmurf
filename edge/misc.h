@@ -118,6 +118,35 @@ void GradientModulus2D_tensor2D( float *gradient_modulus,
 				 int type);
 
 /**
+ * Compute the tensor wavelet transform (modulus, argument)
+ * from the components of the WT tensor in 2D3C
+ * 
+ * \param[out] gradient_modulus
+ * \param[out] gradient_argument
+ * \param[in,out] derivative_along_X1
+ * \param[in,out] derivative_along_Y1
+ * \param[in] derivative_along_X2
+ * \param[in] derivative_along_Y2
+ * \param[in] derivative_along_X3
+ * \param[in] derivative_along_Y3
+ * \param[in] type (a valid value is taken from enum SVD_TYPE)
+ *
+ * Take care that derivative_along_X1, derivative_along_Y1 are modified
+ * by this routine; contains the WT vector (direction of the largest/smallest 
+ * singular value).
+ */
+void GradientModulus2D_tensor3D( float *gradient_modulus,
+				 float *gradient_argument,
+				 float *derivative_along_X1,
+				 float *derivative_along_Y1,
+				 float *derivative_along_X2,
+				 float *derivative_along_Y2,
+				 float *derivative_along_X3,
+				 float *derivative_along_Y3,
+				 int length,
+				 int type);
+
+/**
  * Compute tha maximum value of the symetric / antisymetric part of the WT tensor.
  *
  * The first 4 arguments are the WT tensor components.

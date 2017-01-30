@@ -177,6 +177,118 @@ void GradientModulus2D_tensor2D( float *gradient_modulus,
   
 } // GradientModulus2D_tensor2D
 
+void GradientModulus2D_tensor3D( float *gradient_modulus,
+				 float *gradient_argument,
+				 float *derivative_along_X1,
+				 float *derivative_along_Y1,
+				 float *derivative_along_X2,
+				 float *derivative_along_Y2,
+				 float *derivative_along_X3,
+				 float *derivative_along_Y3,
+				 int length,
+				 int type)
+{
+  register int i;
+  register float *norme = gradient_modulus;
+  register float *argu  = gradient_argument;
+  register float *gx1 = derivative_along_X1;
+  register float *gy1 = derivative_along_Y1;
+  register float *gx2 = derivative_along_X2;
+  register float *gy2 = derivative_along_Y2;
+  register float *gx3 = derivative_along_X3;
+  register float *gy3 = derivative_along_Y3;
+
+  register int index_max_vp;
+
+  /* some variable for SVD computations */
+  float **wt_tensor;
+  float **v;
+  float  *w;
+  double *rv1;
+
+  /* init full 2D : allocation */
+  /*init_full_2D(wt_tensor, v, w, rv1);*/
+  {
+    int z;
+    /* alloc wt_tensor */
+    wt_tensor = (float **) malloc(2 * sizeof(float *));
+    for (z=0; z<2; z++)
+      wt_tensor[z] = (float *) malloc(3 * sizeof(float));
+    
+    v = (float **) malloc(2 * sizeof(float *));
+    for (z=0; z<2; z++)
+      v[z] = (float *) malloc(2 * sizeof(float));
+    
+    w = (float *) malloc(2 * sizeof(float));
+    rv1 = (double *) malloc(2 * sizeof(double));
+  }
+
+  for ( i=0; i<length; i++, norme++, argu++, gx1++, gy1++, gx2++, gy2++ ) {
+    /* aim is fill norm (specral radius of wt_tensor) */
+    /* fill wt_tensor */
+    wt_tensor[0][0] = *gx1;
+    wt_tensor[0][1] = *gx2;
+    wt_tensor[0][2] = *gx3;
+    wt_tensor[1][0] = *gy1;
+    wt_tensor[1][1] = *gy2;
+    wt_tensor[1][2] = *gy3;
+    dsvd(wt_tensor,3,2,w,v,rv1);
+    
+    /* now wt_tensor contains the matrix U of the singular value decomposition
+       wt_tensor(old) = wt_tensor * W * V' */
+
+    /* find max_vp = spectral radius ! */
+    /*
+      if (w[0]>w[1]) {
+      *norme = w[0];
+      index_max_vp = 0;
+      } else {
+      *norme = w[1];
+      index_max_vp = 1;
+      }
+    */
+    if (type == SVD_TYPE_MAX) {
+      if (w[0]>w[1]) {
+	*norme = w[0];
+	index_max_vp = 0;
+      } else {
+	*norme = w[1];
+	index_max_vp = 1;
+      }
+    } else if (type == SVD_TYPE_MIN) {
+      if (w[0]<w[1]) {
+	*norme = w[0];
+	index_max_vp = 0;
+      } else {
+	*norme = w[1];
+	index_max_vp = 1;
+      }
+    }
+
+    /* THE Wavelet Transform !!! */
+    *gx1 = (*norme)*wt_tensor[0][index_max_vp];
+    *gy1 = (*norme)*wt_tensor[1][index_max_vp];
+    
+    if ((*norme)>0.000001)
+      *argu = (float) atan2(*gy1,*gx1);
+    else
+      *argu = 0.0;
+  }
+
+  /* close full 2D : free memory */
+  /*close_full_2D(wt_tensor, v, w, rv1);*/
+  {
+    int z;
+    for (z=0; z<2; z++) {
+      free((void*) wt_tensor[z]);
+      free((void*) v[z]);
+    }
+    free(w);
+    free(rv1);
+  }
+  
+} // GradientModulus2D_tensor3D
+
 void GradientModulus2D_tensor2D_LT( float *derivative_along_X1,
 				    float *derivative_along_Y1,
 				    float *derivative_along_X2,
