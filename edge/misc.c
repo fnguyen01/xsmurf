@@ -341,7 +341,7 @@ void GradientModulus2D_tensor3D_LT( float *derivative_along_X1,
     
     // max of symetric tensor part
     modL[i] = MAX6( fabs(gx1), fabs(gy2), 0, 0.5*fabs(gx3),
-             0.5*fabs(gx2 + gy1), 0.5*fabs(gy3);
+             0.5*fabs(gx2 + gy1), 0.5*fabs(gy3));
     
     // max of anti-symetric tensor part
     modT[i] = MAX3(0.5 * fabs( gx2-gy1 ), 0.5*fabs(gx3), 0.5*fabs(gy3));

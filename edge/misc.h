@@ -247,7 +247,7 @@ void GradientModulus3D_tensor3D_LT( float *derivative_along_X1,
 				    float *derivative_along_Z3,
 				    int length,
 				    float *modL,
-				    float *modT)
+				    float *modT);
 
 /* void GradientModulus3D_tensor3D_vector( fftw_real *derivative_along_X1,  */
 /* 					fftw_real *derivative_along_Y1,  */
