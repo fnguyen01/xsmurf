@@ -252,6 +252,7 @@ List of internal commands :
   logMsg
   wtmmg
   wtmmg2d_vector
+  wtmmg2d3c_vector
   wtmmg3d_scalar
   wtmmg3d_vector
   wtmmg_partial

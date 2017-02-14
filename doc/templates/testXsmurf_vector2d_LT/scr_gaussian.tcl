@@ -129,7 +129,7 @@ set theScr {
 	    set pf_suffix T
 	    set pf_filename ${baseDir}/pf/pf_${type}_${imaIdf1}_${imaIdf2}_${wavelet}_${pf_method_str}_${pf_suffix}
 	    if {[file exists ${pf_filename}] == 0} {
-		dputs " Computing Longitudinal pf..."
+		dputs " Computing Transverse pf..."
 		
 		set zepf [pf create]
 		pf  init $zepf $amin $noct $nvox $q_lst $size $pf_method {}
