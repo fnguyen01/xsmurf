@@ -42,7 +42,7 @@
 #define SEUIL 10e-6
 
 #define log2(x) (log(x)/log(2))
-#define HANDLE_NETCDF_ERROR if (status != NC_NOERR) return GenErrorAppend(interp, "NetCDF error : ",status, NULL); 
+#define HANDLE_NETCDF_ERROR if (status != NC_NOERR) {char str[25];sprintf(str,"NetCDF error : %d",status);return GenErrorAppend(interp, str, NULL);} 
 
 int next_power_of_2__(int i);
 
@@ -6175,14 +6175,14 @@ int Ima3DNetCDFLoadCmd_(ClientData clientData,
   char  * imageNamevx     = NULL; 
   char  * imageNamevy     = NULL;
   char  * imageNamevz     = NULL;
-  int     lx, ly, lz;
+  size_t     lx, ly, lz;
   Image3D * imagevx = NULL;
   Image3D * imagevy = NULL;
   Image3D * imagevz = NULL;
   real *datavx,*datavy,*datavz;
   int status, ncid, dimidx, dimidy, dimidz;
   int varidx, varidy, varidz;
-  int dim[3],start[3];
+  size_t dim[3],start[3];
   //char    tempBuffer[100], saveFormat[10];
 
   if (arg_init(interp, argc, argv, options, help_msg))
@@ -6191,24 +6191,19 @@ int Ima3DNetCDFLoadCmd_(ClientData clientData,
   if (arg_get(0, &imageFilename, &imageNamevx, &imageNamevy, &imageNamevz) == TCL_ERROR)
     return TCL_ERROR;
 
-  if (!imageNamevx)
+
+  if (!imageNamevx || !imageNamevy || !imageNamevz)
   {
     int ssize = strlen(imageFilename);
-    imageNamevx = (char *) malloc(ssize*sizeof(char));
-    imageNamevy = (char *) malloc(ssize*sizeof(char));
-    imageNamevy = (char *) malloc(ssize*sizeof(char));
-    strcpy(imageNamevx,imageFilename);
-    strcpy(imageNamevy,imageFilename);
-    strcpy(imageNamevz,imageFilename);
-    imageNamevx[ssize-1]='x';
-    imageNamevy[ssize-1]='y';
-    imageNamevz[ssize-1]='z';
-    imageNamevx[ssize-2]='v';
-    imageNamevy[ssize-2]='v';
-    imageNamevz[ssize-2]='v';
-    imageNamevx[ssize-3]='_';
-    imageNamevy[ssize-3]='_';
-    imageNamevz[ssize-3]='_';
+    imageNamevx = (char *) malloc(ssize+1);
+    imageNamevy = (char *) malloc(ssize+1);
+    imageNamevz = (char *) malloc(ssize+1);
+    memcpy(imageNamevx,imageFilename,ssize+1);
+    memcpy(imageNamevy,imageFilename,ssize+1);
+    memcpy(imageNamevz,imageFilename,ssize+1);
+    strcpy(imageNamevx+ssize-3,"_vx");
+    strcpy(imageNamevy+ssize-3,"_vy");
+    strcpy(imageNamevz+ssize-3,"_vz");
   }
 
   status = nc_open(imageFilename,NC_NOWRITE,&ncid);
@@ -6239,17 +6234,23 @@ int Ima3DNetCDFLoadCmd_(ClientData clientData,
   status = nc_inq_varid(ncid,"velocity_x",&varidx);
   HANDLE_NETCDF_ERROR
   
-  //if (lz == NC_UNLIMITED) // check actual size
-  //{
-    status = nc_inq_vardimid(ncid,varidx,dim);
+  if (lz == NC_UNLIMITED) // check actual size
+  {
+    int d[3];
+    
+    status = nc_inq_vardimid(ncid,varidx,d);
     HANDLE_NETCDF_ERROR
     
-    lz = dim[2];
-  //}
+    lz = d[2];
+  } 
+  dim[0] = lx;
+  dim[1] = ly;
+  dim[2] = lz;
   
-  start[0] = 1;
-  start[1] = 1;
-  start[2] = 1;
+  
+  start[0] = 0;
+  start[1] = 0;
+  start[2] = 0;
   
   
   imagevx = im3D_new(lx,ly,lz,lx*ly*lz,PHYSICAL);
@@ -6263,9 +6264,17 @@ int Ima3DNetCDFLoadCmd_(ClientData clientData,
   
   datavy = imagevy->data;
   
+
+  status = nc_inq_varid(ncid,"velocity_y",&varidy);
+  HANDLE_NETCDF_ERROR
+
   status = nc_get_vara_float(ncid,varidy,start,dim,datavy);
   HANDLE_NETCDF_ERROR
   
+
+  status = nc_inq_varid(ncid,"velocity_z",&varidz);
+  HANDLE_NETCDF_ERROR
+
   imagevz = im3D_new(lx,ly,lz,lx*ly*lz,PHYSICAL);
   
   datavz = imagevz->data;
@@ -6282,6 +6291,10 @@ int Ima3DNetCDFLoadCmd_(ClientData clientData,
   Tcl_AppendResult(interp, imageNamevy, NULL);
   store_image3D(imageNamevz, imagevz);
   Tcl_AppendResult(interp, imageNamevz, NULL);
+
+  free(imageNamevx);
+  free(imageNamevy);
+  free(imageNamevz);
 
   status = nc_close(ncid);
   HANDLE_NETCDF_ERROR
